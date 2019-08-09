@@ -54,3 +54,21 @@ const blobTransport = new AzureBlobTransport({
   },
 });
 ```
+
+You can customize message log. Default using JSON.stringify .
+```JavaScript
+const blobTransport = new AzureBlobTransport({
+  blobs: new BlobService(),
+  containerName: 'mylogs',
+  format: winston.format.combine(
+    winston.format.timestamp()
+  ),
+  formatMessageLog: (data) => {
+      //Custom message log here
+      var message = data.message;
+      var timestamp = data.timestamp;
+      var level = data.level;
+      return `${timestamp} [${level}]: ${message}`;
+  }
+});
+```
