@@ -4,6 +4,7 @@ import { LogFunction, TransportStreamOptions } from 'winston-transport';
 import TransportStream = require('winston-transport');
 
 export type BlobNameResolver = () => string;
+export type FormatMessageLogResolver = (data:any) => string;
 
 export interface AzureBlobOptions extends TransportStreamOptions {
   /** Blob service where logs will be stored */
@@ -14,6 +15,9 @@ export interface AzureBlobOptions extends TransportStreamOptions {
 
   /** Blob name, or a function returning a blob name (e.g. for timestamp-segmented blobs) */
   blobName: string | BlobNameResolver;
+
+  /** Custom format message log*/
+  formatMessageLog: FormatMessageLogResolver;
 
   /** Set to true to apply log callbacks immediately. Any Blob errors will be available as 'error' events on the Transport. */
   silent?: boolean;
@@ -43,7 +47,7 @@ export class AzureBlobTransport extends TransportStream {
 
   private writeToBlob(tasks: any[], callback: (err?: Error) => void) {
     const name = this.getBlobName();
-    const text = tasks.map((x) => JSON.stringify(x)).join('\n') + '\n';
+    const text = tasks.map((x) => this.getFormatMessageLog(x)).join('\n') + '\n';
     const data = Buffer.from(text);
     let bytesWritten = 0;
     async.doUntil(
@@ -80,5 +84,9 @@ export class AzureBlobTransport extends TransportStream {
 
   private getBlobName() {
     return typeof this.options.blobName === 'function' ? this.options.blobName() : this.options.blobName;
+  }
+
+  private getFormatMessageLog(data:any) {
+    return  this.options.formatMessageLog !== undefined ? this.options.formatMessageLog(data): JSON.stringify(data);
   }
 }
